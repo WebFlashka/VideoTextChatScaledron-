@@ -82,7 +82,7 @@ function startWebRTC(isOfferer) {
     noiseSuppression: true,  // Подавление шума
     autoGainControl: true,   // Автоматическое управление усилением
     sampleRate: 44100,       // Частота дискретизации (например, 44.1 кГц)
-    channelCount: 2,         // Количество каналов (стерео)
+    channelCount: 5,         // Количество каналов (стерео)
   },
   video: true
 }).then(stream => {
