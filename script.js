@@ -77,14 +77,18 @@ function startWebRTC(isOfferer) {
   };
 
   navigator.mediaDevices.getUserMedia({
-    audio: true,
-    video: true,
-  }).then(stream => {
-    // Display your local video in #localVideo element
-    localVideo.srcObject = stream;
-    // Add your stream to be sent to the conneting peer
-    pc.addStream(stream);
-  }, onError);
+  audio: {
+    echoCancellation: true,  // Подавление эха
+    noiseSuppression: true,  // Подавление шума
+    autoGainControl: true,   // Автоматическое управление усилением
+    sampleRate: 44100,       // Частота дискретизации (например, 44.1 кГц)
+    channelCount: 2,         // Количество каналов (стерео)
+  },
+  video: true
+}).then(stream => {
+  localVideo.srcObject = stream;
+  pc.addStream(stream);
+}).catch(onError);
 
   // Listen to signaling data from Scaledrone
   room.on('data', (message, client) => {
