@@ -67,7 +67,19 @@ function startWebRTC(isOfferer) {
   // If user is offerer let the 'negotiationneeded' event create the offer
   if (isOfferer) {
     pc.onnegotiationneeded = () => {
-      pc.createOffer().then(localDescCreated).catch(onError);
+      pc.createOffer().then(offer => {
+        return pc.setLocalDescription(offer);
+      }).then(() => {
+        const audioTransceiver = pc.getTransceivers().find(transceiver => transceiver.sender.track.kind === 'audio');
+        if (audioTransceiver) {
+          const params = audioTransceiver.sender.getParameters();
+          params.encodings = [{
+            maxBitrate: 128000,  // Устанавливаем максимальный битрейт для аудио
+            ptime: 20,  // Период времени для пакета (в мс)
+          }];
+          audioTransceiver.sender.setParameters(params);
+        }
+      }).catch(onError);
     }
   }
 
@@ -77,18 +89,20 @@ function startWebRTC(isOfferer) {
   };
 
   navigator.mediaDevices.getUserMedia({
-  audio: {
-    echoCancellation: true,  // Подавление эха
-    noiseSuppression: true,  // Подавление шума
-    autoGainControl: true,   // Автоматическое управление усилением
-    sampleRate: 44100,       // Частота дискретизации (например, 44.1 кГц)
-    channelCount: 5,         // Количество каналов (стерео)
-  },
-  video: true
-}).then(stream => {
-  localVideo.srcObject = stream;
-  pc.addStream(stream);
-}).catch(onError);
+    audio: {
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true,
+      sampleRate: 64100,
+      channelCount: 1,
+    },
+    video: true,
+  }).then(stream => {
+    // Display your local video in #localVideo element
+    localVideo.srcObject = stream;
+    // Add your stream to be sent to the connecting peer
+    pc.addStream(stream);
+  }).catch(onError);
 
   // Listen to signaling data from Scaledrone
   room.on('data', (message, client) => {
@@ -107,9 +121,7 @@ function startWebRTC(isOfferer) {
       }, onError);
     } else if (message.candidate) {
       // Add the new ICE candidate to our connections remote description
-      pc.addIceCandidate(
-        new RTCIceCandidate(message.candidate), onSuccess, onError
-      );
+      pc.addIceCandidate(new RTCIceCandidate(message.candidate), onSuccess, onError);
     }
   });
 }
